@@ -31,7 +31,8 @@ my $rc = Redis->new( server => '127.0.0.1:6379' );
 $rc->select("2");
 my $asn = "";
 
-$asn = <STDIN>;
+my $input = <STDIN>;
+$asn = substr $input, 0, 32;
 chomp($asn);
 if ( !checkASN($asn) ) {
     print "ASN format incorrect";
@@ -82,7 +83,6 @@ sub fetchASN {
             my $rankingvalue = $r->get($key);
             my $decrankingvalue = sprintf( "%.20f", $rankingvalue );
 
-            #print $key."=". $decrankingvalue ."\n";
             $total      = $total + $decrankingvalue;
             $sourceview = $sourceview + 1;
         }
