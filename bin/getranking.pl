@@ -57,7 +57,7 @@ sub ByeBye {
 
 sub cacheValue {
     my $value = shift;
-    my $key = "rank|" . $asn . "|" . $yesterday . "|c4";
+    my $key   = "rank|" . $asn . "|" . $yesterday . "|c4";
     $rc->set( $key => $value );
 }
 
