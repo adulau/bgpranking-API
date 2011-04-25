@@ -1,3 +1,9 @@
 #!/bin/sh
+#
+# sample use of the api to provide
+# a whois-like interface to BGP Ranking
+#
+#
+
 sudo socat TCP6-LISTEN:43,fork,tcpwrap=script,ipv6only=0  EXEC:/home/bgpranking-api/git/bgpranking-api/bin/getranking.pl,su-d=bgpranking-api,pty,stderr,echo=0
 
