@@ -1,6 +1,10 @@
 #!/usr/bin/perl
 
 $| = 1;
+
+use strict;
+use warnings;
+
 use Redis;
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
 use Date::Calc qw(Today Add_Delta_Days);
@@ -39,7 +43,7 @@ if ( !checkASN($asn) ) {
     ByeBye();
 }
 my ( $total, $visibility ) = fetchASN($asn);
-$value = $asn . "," . $total . "," . $visibility;
+my $value = $asn . "," . $total . "," . $visibility;
 
 print $value. "\n";
 cacheValue($value);
@@ -53,7 +57,7 @@ sub ByeBye {
 
 sub cacheValue {
     my $value = shift;
-    $key = "rank|" . $asn . "|" . $yesterday . "|c4";
+    my $key = "rank|" . $asn . "|" . $yesterday . "|c4";
     $rc->set( $key => $value );
 }
 
@@ -77,7 +81,7 @@ sub fetchASN {
     my $sourceview  = 0;
     foreach my $lsource (@Source) {
 
-        $key = $asn . "|" . $yesterday . "|" . $lsource . "|rankv4";
+        my $key = $asn . "|" . $yesterday . "|" . $lsource . "|rankv4";
 
         if ( $r->exists($key) ) {
             my $rankingvalue = $r->get($key);
