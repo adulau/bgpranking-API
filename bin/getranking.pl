@@ -51,7 +51,10 @@ my @Source = (
     "ZeustrackerIpBlockList", "URLQuery",
     "MalwareDomainListIP",    "DshieldDaily",
     "DshieldTopIPs",          "SpyeyetrackerIpBlockList",
-    "AmadaIpBlockList",       "BlocklistDe"
+    "AmadaIpBlockList",       "BlocklistDeSsh",
+    "BlocklistDeMail",        "BlocklistDeApache",
+    "BlocklistDePop3",        "BlocklistDeFtp",
+    "SshblBase"
 );
 
 my $r = Redis->new( server => $redisbgpranking );
