@@ -47,12 +47,12 @@ if ( $date[2] < 10 ) {
 
 my $yesterday = $date[0] . "-" . $date[1] . "-" . $date[2];
 
-my @Source = (
-    "ZeustrackerIpBlockList", "URLQuery",
-    "MalwareDomainListIP",    "DshieldDaily",
-    "DshieldTopIPs",          "SpyeyetrackerIpBlockList",
-    "AmadaIpBlockList",       "BlocklistDe"
-);
+#my @Source = (
+#    "ZeustrackerIpBlockList", "URLQuery",
+#    "MalwareDomainListIP",    "DshieldDaily",
+#    "DshieldTopIPs",          "SpyeyetrackerIpBlockList",
+#    "AmadaIpBlockList",       "BlocklistDe"
+#);
 
 my $r = Redis->new( server => $redisbgpranking );
 $r->select("6");
@@ -104,6 +104,10 @@ sub fetchASN {
     my $total       = 1;
     my $sourcetotal = 1;
     my $sourceview  = 0;
+    $r->select("5");
+    my @Source = $r->smembers( $yesterday . "|sources" );
+    $r->select("6");
+
     foreach my $lsource (@Source) {
 
         my $key = $asn . "|" . $yesterday . "|" . $lsource . "|rankv4";
