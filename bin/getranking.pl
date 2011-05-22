@@ -107,7 +107,6 @@ sub fetchASN {
     $r->select("5");
     my @Source = $r->smembers( $yesterday . "|sources" );
     $r->select("6");
-
     foreach my $lsource (@Source) {
 
         my $key = $asn . "|" . $yesterday . "|" . $lsource . "|rankv4";
