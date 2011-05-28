@@ -1,4 +1,23 @@
 #!/usr/bin/perl
+#
+#    Whois-like API to BGP Ranking
+#
+#    Copyright (C) 2011 Alexandre Dulaunoy
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
 
 $| = 1;
 
@@ -22,6 +41,7 @@ if ( $date[2] < 10 ) {
 
 my $yesterday = $date[0] . "-" . $date[1] . "-" . $date[2];
 
+# source format
 #my @Source = (
 #    "ZeustrackerIpBlockList", "URLQuery",
 #    "MalwareDomainListIP",    "DshieldDaily",
@@ -42,9 +62,11 @@ if ( !checkASN($asn) ) {
     print "ASN format incorrect";
     ByeBye();
 }
-my ( $total, $visibility ) = fetchASN($asn);
-my $value = $asn . "," . $total . "," . $visibility;
+my ( $total, $visibility, $best, $score ) = fetchASN($asn);
+my $value =
+  $asn . "," . $total . "," . $visibility . "," . $best . "," . $score;
 
+print "# ASN,Rank,Matched BL,Best Ranking,Current Position\n";
 print $value. "\n";
 cacheValue($value);
 ByeBye();
@@ -57,7 +79,7 @@ sub ByeBye {
 
 sub cacheValue {
     my $value = shift;
-    my $key = "rank|" . $asn . "|" . $yesterday . "|c4";
+    my $key   = "rank|" . $asn . "|" . $yesterday . "|c4";
     $rc->set( $key => $value );
 }
 
@@ -82,6 +104,15 @@ sub fetchASN {
     $r->select("5");
     my @Source = $r->smembers( $yesterday . "|sources" );
     $r->select("6");
+    my $r2 = Redis->new( server => '149.13.33.68:6382' );
+    $r2->select("6");
+    my $asrank = $r2->zrevrank( $yesterday . "|global|rankv4", $asn );
+    if ( !defined($asrank) ) { $asrank = "not ranked"; }
+    my $astotal = $r2->zcard( $yesterday . "|global|rankv4" );
+    my $score   = $asrank . "/" . $astotal;
+    my @bestrank =
+      $r2->zrevrange( $yesterday . "|global|rankv4", 0, 0, "WITHSCORES" );
+    my $best = 1 + $bestrank[1];
 
     foreach my $lsource (@Source) {
 
@@ -98,6 +129,6 @@ sub fetchASN {
 
     }
     my $visibility = $sourceview . "/" . $sourcetotal;
-    return ( $total, $visibility );
+    return ( $total, $visibility, $best, $score );
 
 }
