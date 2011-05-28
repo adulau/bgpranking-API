@@ -1,31 +1,25 @@
 #!/usr/bin/perl
 #
-# BGP Ranking API - simple API (whois-like) to get ASN ranking value
+#    Whois-like API to BGP Ranking
 #
-# To run your own, you'll need the following:
+#    Copyright (C) 2011 Alexandre Dulaunoy
 #
-# - A BGP Ranking installation (https://github.com/Rafiot/bgp-ranking)
-# - An additional Redis server for caching computed values
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
 #
-# Copyright (C) 2011 Alexandre Dulaunoy
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 $| = 1;
-
-my $redisbgpranking = "1.2.3.4:6379";
-my $rediscaching = "127.0.0.0:6379";
 
 use strict;
 use warnings;
@@ -47,6 +41,7 @@ if ( $date[2] < 10 ) {
 
 my $yesterday = $date[0] . "-" . $date[1] . "-" . $date[2];
 
+# source format
 #my @Source = (
 #    "ZeustrackerIpBlockList", "URLQuery",
 #    "MalwareDomainListIP",    "DshieldDaily",
@@ -54,9 +49,9 @@ my $yesterday = $date[0] . "-" . $date[1] . "-" . $date[2];
 #    "AmadaIpBlockList",       "BlocklistDe"
 #);
 
-my $r = Redis->new( server => $redisbgpranking );
+my $r = Redis->new( server => '149.13.33.68:6379' );
 $r->select("6");
-my $rc = Redis->new( server => $rediscaching );
+my $rc = Redis->new( server => '127.0.0.1:6379' );
 $rc->select("2");
 my $asn = "";
 
@@ -67,11 +62,13 @@ if ( !checkASN($asn) ) {
     print "ASN format incorrect";
     ByeBye();
 }
-my ( $total, $visibility ) = fetchASN($asn);
-my $value = $asn . "," . $total . "," . $visibility;
+my ( $total, $visibility, $best, $score ) = fetchASN($asn);
+my $value =
+  $asn . "," . $total . "," . $visibility . "," . $best . "," . $score;
 
-cacheValue($value);
+print "# ASN,Rank,Matched BL,Best Ranking,Current Position\n";
 print $value. "\n";
+cacheValue($value);
 ByeBye();
 
 sub ByeBye {
@@ -107,6 +104,16 @@ sub fetchASN {
     $r->select("5");
     my @Source = $r->smembers( $yesterday . "|sources" );
     $r->select("6");
+    my $r2 = Redis->new( server => '149.13.33.68:6382' );
+    $r2->select("6");
+    my $asrank = $r2->zrevrank( $yesterday . "|global|rankv4", $asn );
+    if ( !defined($asrank) ) { $asrank = "not ranked"; }
+    my $astotal = $r2->zcard( $yesterday . "|global|rankv4" );
+    my $score   = $asrank . "/" . $astotal;
+    my @bestrank =
+      $r2->zrevrange( $yesterday . "|global|rankv4", 0, 0, "WITHSCORES" );
+    my $best = 1 + $bestrank[1];
+
     foreach my $lsource (@Source) {
 
         my $key = $asn . "|" . $yesterday . "|" . $lsource . "|rankv4";
@@ -122,6 +129,6 @@ sub fetchASN {
 
     }
     my $visibility = $sourceview . "/" . $sourcetotal;
-    return ( $total, $visibility );
+    return ( $total, $visibility, $best, $score );
 
 }
