@@ -28,6 +28,8 @@ use Redis;
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
 use Date::Calc qw(Today Add_Delta_Days);
 use Number::FormatEng qw(:all);
+use Env qw(SOCAT_PEERADDR);
+use Sys::Syslog qw( :DEFAULT setlogsock);
 
 my @date = Add_Delta_Days( Today(), -1 );
 
@@ -66,7 +68,13 @@ my ( $total, $visibility, $best, $score ) = fetchASN($asn);
 my $value =
   $asn . "," . $total . "," . $visibility . "," . $best . "," . $score;
 
-print "# ASN,Rank,Matched BL,Best Ranking,Current Position\n";
+#print STDERR $SOCAT_PEERADDR . "-->".$value;
+setlogsock('unix');
+openlog($0,'','user');
+syslog('info',$SOCAT_PEERADDR . "-->".$value);
+closelog;
+
+print "# ASN,Rank,Matched BL,Highest Malicious Ranking,Current Position\n";
 print $value. "\n";
 cacheValue($value);
 ByeBye();
@@ -108,7 +116,7 @@ sub fetchASN {
     $r2->select("6");
     my $asrank = $r2->zrevrank( $yesterday . "|global|rankv4", $asn );
     if ( !defined($asrank) ) { $asrank = "not ranked"; }
-    my $astotal = $r2->zcard( $yesterday . "|global|rankv4" );
+    my $astotal = $r->get( $yesterday . "|amount_asns" );
     my $score   = $asrank . "/" . $astotal;
     my @bestrank =
       $r2->zrevrange( $yesterday . "|global|rankv4", 0, 0, "WITHSCORES" );
