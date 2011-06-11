@@ -116,7 +116,7 @@ sub fetchASN {
     $r2->select("6");
     my $asrank = $r2->zrevrank( $yesterday . "|global|rankv4", $asn );
     if ( !defined($asrank) ) { $asrank = "not ranked"; }
-    my $astotal = $r2->zcard( $yesterday . "|global|rankv4" );
+    my $astotal = $r->get( $yesterday . "|amount_asns" );
     my $score   = $asrank . "/" . $astotal;
     my @bestrank =
       $r2->zrevrange( $yesterday . "|global|rankv4", 0, 0, "WITHSCORES" );
